@@ -172,7 +172,64 @@ class Testrun(CustomFields, Comments):
         with open(file_path, "rb") as file_content:
             service.updateTestRunAttachment(self.uri, file_name, title, file_content.read())
         self._reloadFromPolarion()
+    
+    def updateCustomFields(self, parameter, value):
+        """
+        Update the custom fields
+        :param parameter: parameter to update
+        :param value: value of parameters
+        """
+        if getattr(self, "customFields") == None:
+            data = {"Custom" : [{"key" : parameter, "value" : value}]}
+            setattr(self, "customFields", data)
+        else:
+           Found = False
+           doc = getattr(self, "customFields")
+           for defs in doc["Custom"]:
+             if defs["key"] == parameter:
+                 defs["value"] = value
+                 Found = True
+           if Found == False:
+             data = {{"key" : parameter, "value" : value}}
+             doc["Custom"].append(data)
+        self.save()
 
+    def updateTestParameter(self, parameter, value):
+        """
+        Update the test parameters
+        :param parameter: parameter to update
+        :param value: value of parameters
+        """
+        found = False;
+
+        if getattr(self, "testParameters") == None:
+            defs = {'name' : parameter}
+            definitions = {'ParameterDefinition' : defs}
+            pars = {"Parameter" : [{"name" : parameter, "value" : value}]}
+            data = {"parameterDefinitions" : definitions, "parameters" : pars}
+            setattr(self, "testParameters", data)
+        else:
+            definitions = getattr(self, "testParameters")
+            #defintions
+            for defs in definitions["parameterDefinitions"]["ParameterDefinition"]:
+                if defs['name'] == parameter:
+                    found = True
+                    #definitions["parameterDefinitions"]['ParameterDefinition']['name'] = value
+            if found == False:    
+                definitions["parameterDefinitions"]["ParameterDefinition"].append({"name" : parameter})
+            found = False;
+            if definitions["parameters"] == None:
+                par = {"Parameter" : [{"name" : parameter, "value" : value}]}
+                definitions["parameters"] = par
+            else:
+                for par in definitions["parameters"]["Parameter"]:
+                    if par["name"] == parameter:
+                        par["value"] = value
+                        found = True
+                if found == False:
+                    definitions["parameters"]["Parameter"].append({"name" : parameter, "value" : value})
+        self.save()            
+    
     def save(self):
         """
         Update the testrun in polarion
